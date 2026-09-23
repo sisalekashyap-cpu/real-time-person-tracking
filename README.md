@@ -1,107 +1,445 @@
-# AI-Powered Person Tracking & Attendance System (Corrected Version)
+# Real-Time Person Detection & Tracking
 
-A real-time Computer Vision system for detecting, tracking, and counting people. Designed for classrooms, university halls, and corporate workspaces.
+A real-time computer vision project for detecting and tracking people in video using **OpenCV, MobileNet-SSD, and centroid-based object tracking**.
 
-This version is updated with:
-- **Live Real Camera / Webcam support** as default (`/dev/video0` or any connected camera).
-- **Fast, native OpenCV C++ Non-Maximum Suppression (`cv2.dnn.NMSBoxes`)**.
-- **Corrected Centroid Tracking Logic** (fixed dropped detections and un-deregistered objects).
-- **Accurate Real-Time FPS** and clear Heads-Up Display (HUD).
-- **Proper MobileNet-SSD 300×300 input blob geometry**.
-- **Modern dependency support** in `requirements.txt`.
-- **Command-line arguments (`argparse`)** to easily switch cameras, videos, and parameters.
+> **Important:** This project performs person detection and temporary object tracking. It does **not** perform facial recognition or identify people by their real-world identity.
 
 ---
 
-## 1. Quick Start
+## Overview
 
-### Step 1: Install Dependencies
+This project processes video frames in real time, detects people using the **MobileNet-SSD** object detection model, and tracks detected people across frames using a **centroid-based tracking algorithm**.
+
+The system can:
+
+* Detect people in video
+* Draw bounding boxes around detected people
+* Assign temporary tracking IDs
+* Maintain tracking IDs across frames
+* Count currently tracked people
+* Display tracking information and FPS
+* Process video files and camera input
+* Configure detection and tracking parameters
+
+This repository began as a project from an AI/GenAI workshop and was later modified and extended as a personal computer vision project.
+
+---
+
+## How It Works
+
+The basic processing pipeline is:
+
+```text
+Video / Camera
+      │
+      ▼
+ Read Frame
+      │
+      ▼
+Pre-processing
+      │
+      ▼
+ MobileNet-SSD
+      │
+      ▼
+Person Detection
+      │
+      ▼
+Bounding Boxes
+      │
+      ▼
+Non-Maximum Suppression
+      │
+      ▼
+Centroid Tracker
+      │
+      ▼
+Temporary Tracking IDs
+      │
+      ▼
+Person Count / Visualization
+```
+
+### 1. Person Detection
+
+Each video frame is passed through the MobileNet-SSD model using OpenCV's DNN module.
+
+The detector produces:
+
+* Object class
+* Confidence score
+* Bounding-box coordinates
+
+Only detections classified as `person` are processed by the tracking system.
+
+### 2. Object Tracking
+
+The centroid tracker calculates the center point of each detected bounding box and compares it with previously tracked objects.
+
+This allows the system to maintain a temporary ID as a person moves between frames.
+
+For example:
+
+```text
+Frame 1 → Person → ID 0
+Frame 2 → Person → ID 0
+Frame 3 → Person → ID 0
+Frame 4 → Person → ID 0
+```
+
+When a new object appears, the tracker assigns a new ID.
+
+---
+
+## Tracking IDs Are Not Real Identities
+
+The tracking IDs displayed by this application are temporary identifiers assigned by the tracking algorithm.
+
+For example:
+
+```text
+ID: 0
+ID: 1
+ID: 2
+```
+
+These do **not** represent:
+
+```text
+Student 0
+Student 1
+Student 2
+```
+
+The system does not recognize who a person is.
+
+| Capability             | Supported |
+| ---------------------- | --------: |
+| Person detection       |         ✅ |
+| Object tracking        |         ✅ |
+| Temporary tracking IDs |         ✅ |
+| Person counting        |         ✅ |
+| Facial recognition     |         ❌ |
+| Identity recognition   |         ❌ |
+| Name-based attendance  |         ❌ |
+
+This distinction is important because object tracking and identity recognition are different computer-vision problems.
+
+---
+
+## Features
+
+### Detection
+
+* MobileNet-SSD person detection
+* Configurable confidence threshold
+* Bounding-box visualization
+* Non-Maximum Suppression
+
+### Tracking
+
+* Centroid-based object tracking
+* Temporary tracking IDs
+* Configurable disappearance threshold
+* Configurable tracking distance
+
+### Input
+
+The application supports configurable video input, including:
+
+* Video files
+* Webcam / camera input
+* Supported video streams
+
+### Runtime Information
+
+The application can display:
+
+* Current FPS
+* Active tracked people
+* Total unique tracking IDs observed
+
+---
+
+## Technology Stack
+
+| Component                | Technology        |
+| ------------------------ | ----------------- |
+| Programming Language     | Python            |
+| Computer Vision          | OpenCV            |
+| Object Detection         | MobileNet-SSD     |
+| Tracking                 | Centroid Tracking |
+| Neural Network Interface | OpenCV DNN        |
+| Numerical Processing     | NumPy             |
+| Video Processing         | OpenCV            |
+
+---
+
+## Project Structure
+
+```text
+real-time-person-tracking/
+│
+├── person_tracking.py
+├── centroidtracker.py
+│
+├── MobileNetSSD_deploy.prototxt
+├── MobileNetSSD_deploy.caffemodel
+│
+├── test_video.mp4
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
+
+### File Descriptions
+
+| File                             | Description                                    |
+| -------------------------------- | ---------------------------------------------- |
+| `person_tracking.py`             | Main person detection and tracking application |
+| `centroidtracker.py`             | Centroid-based object tracking implementation  |
+| `MobileNetSSD_deploy.prototxt`   | MobileNet-SSD network architecture             |
+| `MobileNetSSD_deploy.caffemodel` | Trained MobileNet-SSD model                    |
+| `test_video.mp4`                 | Example test video                             |
+| `requirements.txt`               | Python dependencies                            |
+| `.gitignore`                     | Files excluded from version control            |
+
+---
+
+## Requirements
+
+* Python 3.10+
+* OpenCV
+* NumPy
+* SciPy
+* imutils
+* Webcam or video input
+
+The project is designed to run on CPU with a standard OpenCV installation.
+
+---
+
+## Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/sisalekashyap-cpu/real-time-person-tracking.git
+cd real-time-person-tracking
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+### 3. Activate the environment
+
+#### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+#### Windows
+
+```powershell
+.venv\Scripts\activate
+```
+
+### 4. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 2: Run with Real Camera (Default)
+---
 
-To run using your computer's default webcam:
+## Running the Project
+
+Run the application with:
 
 ```bash
 python person_tracking.py
 ```
-*(Automatically connects to camera index `0`)*
 
-If you have multiple webcams (e.g., external USB camera on index `1`):
-
-```bash
-python person_tracking.py --source 1
-```
-
-### Step 3: Run with Sample Video
-
-To test with a recorded video file:
-
-```bash
-python person_tracking.py --source test_video.mp4
-```
-
-To loop the video continuously:
-
-```bash
-python person_tracking.py --source test_video.mp4 --loop
-```
-
-To stop the application at any time, press **`q`** or **`ESC`** in the video window.
+The application can be configured through its available command-line options for input source, detection confidence, tracking parameters, and other runtime settings.
 
 ---
 
-## 2. Command-Line Options
+## Understanding the Tracker
 
-| Option | Flag | Default | Description |
-|---|---|---|---|
-| `--source` | `-s` | `0` | Camera device index (`0`, `1`) or path to a video file. |
-| `--confidence` | `-c` | `0.5` | Minimum confidence score to filter person detections (`0.0`–`1.0`). |
-| `--nms-thresh` | `-n` | `0.3` | Non-Maximum Suppression overlap threshold. |
-| `--max-disappeared` | `-d` | `50` | Frames an object can be missing before being deregistered. |
-| `--max-distance` | `-m` | `90` | Maximum pixel distance to match an object's centroid. |
-| `--width` | | `640` | Frame display and processing width (in pixels). |
-| `--loop` | | `False` | Loop video playback when EOF is reached (video files only). |
+The centroid tracker uses the center of each bounding box:
 
-### Examples
-
-**Higher sensitivity in low-light environments:**
-```bash
-python person_tracking.py --source 0 --confidence 0.35
+```text
+(x1, y1)
+   ┌───────────────┐
+   │               │
+   │       ●       │
+   │    centroid   │
+   │               │
+   └───────────────┘
+             (x2, y2)
 ```
 
-**Fast movement / large room (allow wider distance jumps):**
-```bash
-python person_tracking.py --source 0 --max-distance 130
+The centroid is calculated as:
+
+```text
+cX = (x1 + x2) / 2
+cY = (y1 + y2) / 2
 ```
+
+The tracker then compares current centroids with previously tracked centroids to determine which detections correspond to existing objects.
 
 ---
 
-## 3. What Was Fixed From The Original Version
+## Limitations
 
-1. **Live Camera Default**:
-   - Original only opened `test_video.mp4`.
-   - Now defaults to live webcam input with camera index auto-parsing, camera buffer latency reduction, and graceful fallback.
+This project uses a lightweight detection and tracking approach, so tracking is not perfect in every situation.
 
-2. **Centroid Tracking Logic Defect Fixed**:
-   - The original code used an exclusive `if D.shape[0] >= D.shape[1]: ... else: ...` block that discarded newly appeared people or failed to deregister disappeared objects when distances exceeded `maxDistance`.
-   - The corrected tracker decouples `unusedRows` (disappeared) and `unusedCols` (new registrations) so both are handled independently.
+Tracking IDs can change when:
 
-3. **OpenCV Native C++ NMS**:
-   - Replaced the 40-line custom NumPy NMS (which failed when no detections were present or returned `None` on errors) with OpenCV's optimized `cv2.dnn.NMSBoxes`.
+* A person moves very quickly
+* People overlap heavily
+* A person becomes partially or completely occluded
+* Detection confidence drops
+* Lighting changes significantly
+* Bounding boxes change substantially between frames
+* Multiple people cross paths
 
-4. **Correct MobileNet-SSD Input Resolution**:
-   - Replaced arbitrary frame size passing with MobileNet-SSD's native `(300, 300)` input blob geometry, preventing distorted aspect ratios.
+The system should therefore be considered an **object tracking system**, not an identity tracking or facial recognition system.
 
-5. **Accurate FPS Calculation**:
-   - Replaced integer-truncated `time_diff.seconds` (which showed `FPS: 0.00` for the first second) with a high-resolution rolling window counter using `time.perf_counter()`.
+### Detection limitations
 
-6. **Clear Statistics HUD**:
-   - Separated **Active Count** (people currently visible in frame) from **Total Unique Seen** (cumulative tracking IDs assigned).
-   - Ensured bounding box labels never clip off-screen.
+MobileNet-SSD is a relatively lightweight object detector. Detection performance can vary depending on:
 
-7. **Clean Exit and Resource Management**:
-   - All streams and windows are released cleanly in a `try...finally` block.
+* Lighting conditions
+* Camera quality
+* Camera angle
+* Distance from the camera
+* Person size within the frame
+* Occlusion
+* Video resolution
+
+---
+
+## What I Changed
+
+The original workshop implementation provided the foundation for this project.
+
+The original implementation demonstrated:
+
+* OpenCV DNN-based detection
+* MobileNet-SSD
+* Person filtering
+* Bounding boxes
+* Centroid tracking
+* Temporary tracking IDs
+* Person counting
+
+I subsequently modified and extended the project with improvements including:
+
+* Configurable input sources
+* Command-line configuration
+* Detection confidence configuration
+* Tracking parameter configuration
+* Non-Maximum Suppression using OpenCV
+* Improved input handling
+* Runtime FPS information
+* Tracking visualization
+* Additional runtime controls
+* Updated project documentation
+
+The goal of this repository is to document my work with real-time computer vision while clearly acknowledging the original project that served as the starting point.
+
+---
+
+## Original Workshop Project
+
+This project originated from an AI/GenAI workshop implementation based on the following repository:
+
+**AI-Powered Attendance System for Corporate Universities**
+
+Original repository:
+
+https://github.com/theyashkhatri/AI-Powered-Attendence-System-for-Corporate-Universities
+
+The original project was the starting point for the detection and tracking implementation used here.
+
+This repository is a modified version of that starting point and is maintained separately to document my own changes and experimentation.
+
+---
+
+## Why This Repository Uses "Person Tracking"
+
+The original project uses the term **"Attendance System"**, but the underlying computer-vision pipeline detects and tracks people as objects.
+
+It does not:
+
+* Recognize a person's face
+* Determine a person's name
+* Match a person to a student or employee database
+* Verify someone's identity
+* Record attendance against a real identity
+
+For that reason, this repository is described as:
+
+> **Real-Time Person Detection & Tracking**
+
+rather than claiming to provide real identity-based attendance.
+
+---
+
+## Future Improvements
+
+Possible future work includes:
+
+* Modern object detection models
+* More robust multi-object tracking
+* Improved occlusion handling
+* Trajectory visualization
+* Entry/exit counting
+* Region-of-interest analytics
+* Dwell-time analysis
+* Heatmaps
+* CSV analytics
+* Web dashboard
+* GPU acceleration
+* Performance benchmarking
+
+---
+
+## Learning Outcomes
+
+This project provided practical experience with:
+
+* Computer vision
+* Object detection
+* OpenCV DNN
+* MobileNet-SSD
+* Bounding boxes
+* Confidence thresholds
+* Non-Maximum Suppression
+* Object tracking
+* Centroid tracking
+* Video processing
+* Real-time FPS measurement
+* Python project organization
+
+---
+
+## License
+
+No separate license has currently been added to this repository.
+
+Because this project originated from an existing workshop implementation, please refer to the **original repository** and its applicable terms before redistributing or reusing material derived from it.
+
+---
+
+## Author
+
+**Kashyap Sisale**
+
+GitHub:
+https://github.com/sisalekashyap-cpu
